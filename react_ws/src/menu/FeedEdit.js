@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {Container, TextField, Button, Typography, Box, Divider } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 function FeedEdit() {
   const [searchParams] = useSearchParams();
@@ -26,6 +25,35 @@ function FeedEdit() {
         navigate("/feed");
     })
   };
+
+  const handleEdit = () => {
+    if (!userId || !content) return alert("모든 항목을 입력해주세요.");
+
+    fetch("http://localhost:3000/feed/"+id, {
+        method : "PUT",
+        headers : {
+            "Content-type" : "application/json"   
+        },
+        body : JSON.stringify({userId, content})
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        navigate("/feed");
+    })
+  };
+
+  useEffect(() => {
+    if(id) {
+        fetch("http://localhost:3000/feed/"+id)
+        .then(res => res.json())
+        .then(data => {
+            setUserId(data.feed.userId);
+            setContent(data.feed.content);
+        })
+    } 
+  }, []);
+   
    return (
     <Container maxWidth="sm">
       <Typography variant="h4" gutterBottom>피드 등록</Typography>
@@ -49,9 +77,10 @@ function FeedEdit() {
         onChange={(e) => setContent(e.target.value)}
       />
       <Box mt={2}>
-        <Button variant="contained" color="primary" onClick={handleSubmit}>
-          등록
-        </Button>
+        {id ? 
+        <Button variant="contained" color="primary" onClick={handleEdit}>수정</Button> : 
+        <Button variant="contained" color="primary" onClick={handleSubmit}>등록</Button>}
+        
       </Box>
     </Container>
   )

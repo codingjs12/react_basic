@@ -1,26 +1,30 @@
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { Box, Button, TextField, Typography, Alert, Paper } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 function Login() {
-  const [email, setEmail] = useState('');
+  const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-
+  const navigate = useNavigate();
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!email.includes('@')) {
-      setError('올바른 이메일을 입력하세요.');
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('비밀번호는 최소 6자 이상이어야 합니다.');
-      return;
-    }
+    fetch("http://localhost:3000/login", {
+      method : "POST",
+      headers : {
+        "Content-type" : "application/json"
+      },
+      body : JSON.stringify({userId, pwd : password})
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log(data);
+      localStorage.setItem("token", data.token);
+      navigate("/feed");
+    })
 
     setError('');
-    alert('로그인 성공!');
   };
 
   return (
@@ -31,10 +35,9 @@ function Login() {
         </Typography>
         <Box component="form" onSubmit={handleSubmit} display="flex" flexDirection="column" gap={2}>
           <TextField
-            label="이메일"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            label="아이디"
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
             fullWidth
           />
           <TextField

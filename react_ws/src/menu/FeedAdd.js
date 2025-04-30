@@ -1,106 +1,115 @@
 import React, { useEffect, useState } from "react";
 import {Container, TextField, Button, Typography, Box, Divider } from "@mui/material";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams  } from "react-router-dom";
 
+// 1. 업로드 버튼 검포넌트 생성
 function UploadButton(props) {
   const imgSelect = (event) => {
     const files = event.target.files;
     props.setFile(files);
-  }
+  };
+
   return (
     <div>
-    <label>
-      <input
-        accept="image/*"
-        type="file"
-        style={{ display: "none" }}
-        onChange={imgSelect}
-        multiple
-      />    
-      <Button variant="contained" component="span">
-        파일 선택
-      </Button>
-    </label>
-  </div>
+      <label>
+        <input
+          multiple
+          accept="image/*"
+          type="file"
+          style={{ display: "none" }}
+          onChange={imgSelect}
+        />    
+        <Button variant="contained" component="span">
+          파일 선택
+        </Button>
+      </label>
+    </div>
   );
 }
-function FeedEdit() {
-  const [searchParams] = useSearchParams();
-  const id = searchParams.get("id");
+
+
+function FeedAdd() {
   const [userId, setUserId] = useState("");
   const [content, setContent] = useState("");
-  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // 2. 선택한 파일 저장할 공간 할당
   const [files, setFile] = useState();
+  const id = searchParams.get("id");
+  const navigate = useNavigate();
 
-  const fnUploadFile = (feedId) => {
+  // 5. pk값 받아서 업로드 api 호출
+  const fnUploadFile = (feedId)=>{
     const formData = new FormData();
-    for(let i = 0; i < files.length; i++) {
-      formData.append("file", files[i]);
-      
-    }
+    for(let i=0; i<files.length; i++){
+      formData.append("file", files[i]); 
+    } 
     formData.append("feedId", feedId);
-
-    fetch("http://localhost:3000/feed/upload", {
-      method : "POST",
-      body : formData
+    fetch("http://localhost:3005/feed/upload", {
+      method: "POST",
+      body: formData
     })
     .then(res => res.json())
     .then(data => {
-      
       console.log(data);
-      navigate('/feed');
+      navigate("/feedList"); // 원하는 경로
     })
+    .catch(err => {
+      console.error(err);
+    });
   }
 
+  useEffect(()=>{
+    if(id){
+        fetch("http://localhost:3005/feed/"+id)
+        .then(res => res.json())
+        .then(data => {
+            setUserId(data.feed.userId);
+            setContent(data.feed.content);
+        });
+    }
+  },[])
 
   const handleSubmit = () => {
     if (!userId || !content) return alert("모든 항목을 입력해주세요.");
 
-    fetch("http://localhost:3000/feed", {
+    fetch("http://localhost:3005/feed", {
         method : "POST",
         headers : {
-            "Content-type" : "application/json"   
+            "Content-type" : "application/json"
         },
         body : JSON.stringify({userId, content})
     })
     .then(res => res.json())
     .then(data => {
-        alert(data.message);
+        alert("등록 완료");
+        console.log(data);
+        // 4. 피드 등록 후 선택한 파일이 있으면 insert할때의 pk값을 담아서
+        // 파일 업로드 함수 호출
         if(files) {
           fnUploadFile(data.result.insertId);
         } else {
-          navigate("/feed");
+          navigate("/feedList"); // 원하는 경로
         }
     })
   };
 
   const handleEdit = () => {
     if (!userId || !content) return alert("모든 항목을 입력해주세요.");
-    fetch("http://localhost:3000/feed/"+id, {
+
+    fetch("http://localhost:3005/feed/"+id, {
         method : "PUT",
         headers : {
-            "Content-type" : "application/json"   
+            "Content-type" : "application/json"
         },
         body : JSON.stringify({userId, content})
     })
     .then(res => res.json())
     .then(data => {
-        alert(data.message);
-        navigate("/feed");
+        alert("수정 완료");
+        navigate("/feedList"); // 원하는 경로
     })
   };
 
-  useEffect(() => {
-    if(id) {
-        fetch("http://localhost:3000/feed/"+id)
-        .then(res => res.json())
-        .then(data => {
-            setUserId(data.feed.userId);
-            setContent(data.feed.content);
-        })
-    } 
-  }, []);
-   
    return (
     <Container maxWidth="sm">
       <Typography variant="h4" gutterBottom>피드 등록</Typography>
@@ -114,6 +123,7 @@ function FeedEdit() {
         value={userId}
         onChange={(e) => setUserId(e.target.value)}
       />
+      {/* 3. 컴포넌트 부착(file값을 수정할 수 있게 props로 함수 전달) */}
       <UploadButton setFile={setFile}></UploadButton>
       <TextField
         label="내용"
@@ -128,11 +138,14 @@ function FeedEdit() {
       <Box mt={2}>
         {id ? 
         <Button variant="contained" color="primary" onClick={handleEdit}>수정</Button> : 
-        <Button variant="contained" color="primary" onClick={handleSubmit}>등록</Button>}
+        <Button variant="contained" color="primary" onClick={handleSubmit}>
+          등록
+        </Button>}
         
+        {/* <Button variant="contained" onClick={fnUploadFile}>업로드 테스트 버튼</Button> */}
       </Box>
     </Container>
   )
 }
 
-export default FeedEdit
+export default FeedAdd
